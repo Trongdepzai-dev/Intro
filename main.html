@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trongdepzai-dev Terminal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&family=Share+Tech+Mono&display=swap');
+        
+        :root {
+            --terminal-bg: #0a0a12;
+            --terminal-green: #0f0;
+            --terminal-cyan: #0ff;
+            --terminal-purple: #b19cd9;
+            --terminal-red: #f44;
+            --terminal-yellow: #ff0;
+            --terminal-glow: rgba(0, 255, 0, 0.7);
+            --terminal-border: #333;
+            --text-color: #e0e0e0;
+            --text-shadow: 0 0 8px var(--terminal-glow);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: 'Inconsolata', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            perspective: 1000px;
+        }
+        
+        .matrix-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.15;
+        }
+        
+        .terminal-container {
+            position: relative;
+            width: 85%;
+            max-width: 800px;
+            height: 70vh;
+            background: var(--terminal-bg);
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.5),
+                        inset 0 0 10px rgba(0, 255, 0, 0.2);
+            overflow: hidden;
+            border: 1px solid var(--terminal-green);
+            transform-style: preserve-3d;
+            animation: float 8s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) rotateX(10deg) rotateY(5deg);
+            }
+            50% {
+                transform: translateY(-20px) rotateX(5deg) rotateY(10deg);
+            }
+        }
+        
+        .terminal-header {
+            background: linear-gradient(to right, #0a0a0a, #111);
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--terminal-green);
+            font-family: 'Share Tech Mono', monospace;
+            border-bottom: 1px solid var(--terminal-green);
+            box-shadow: 0 2px 15px rgba(0, 255, 0, 0.3);
+        }
+        
+        .terminal-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .terminal-button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.2s;
+        }
+        
+        .terminal-button:hover {
+            transform: scale(1.2);
+        }
+        
+        .terminal-button.red {
+            background: #ff5f56;
+        }
+        
+        .terminal-button.yellow {
+            background: #ffbd2e;
+        }
+        
+        .terminal-button.green {
+            background: #27c93f;
+        }
+        
+        .terminal-body {
+            padding: 15px;
+            height: calc(100% - 40px);
+            overflow-y: auto;
+            color: var(--text-color);
+            text-shadow: var(--text-shadow);
+            line-height: 1.6;
+            scrollbar-width: thin;
+            scrollbar-color: var(--terminal-green) transparent;
+        }
+        
+        .terminal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .terminal-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .terminal-body::-webkit-scrollbar-thumb {
+            background-color: var(--terminal-green);
+            border-radius: 4px;
+        }
+        
+        .typing-text {
+            white-space: pre-wrap;
+            font-size: 1.1rem;
+        }
+        
+        .command-line {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            position: sticky;
+            bottom: 0;
+            background: var(--terminal-bg);
+            padding: 5px 0;
+        }
+        
+        .prompt {
+            color: var(--terminal-green);
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 20px;
+            background: var(--terminal-green);
+            animation: blink 1s infinite;
+            vertical-align: middle;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        
+        .command-input {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            color: var(--terminal-green);
+            font-family: 'Inconsolata', monospace;
+            font-size: 1.1rem;
+            outline: none;
+            caret-color: var(--terminal-green);
+            text-shadow: var(--text-shadow);
+        }
+        
+        .glitch {
+            position: relative;
+        }
+        
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--terminal-bg);
+        }
+        
+        .glitch::before {
+            left: 2px;
+            text-shadow: -2px 0 var(--terminal-red);
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-1 2s infinite linear alternate-reverse;
+        }
+        
+        .glitch::after {
+            left: -2px;
+            text-shadow: -2px 0 var(--terminal-cyan);
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim-2 2s infinite linear alternate-reverse;
+        }
+        
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(54px, 800px, 54px, 0); }
+            20% { clip: rect(27px, 800px, 86px, 0); }
+            40% { clip: rect(14px, 800px, 75px, 0); }
+            60% { clip: rect(39px, 800px, 104px, 0); }
+            80% { clip: rect(18px, 800px, 53px, 0); }
+            100% { clip: rect(73px, 800px, 112px, 0); }
+        }
+        
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(35px, 800px, 89px, 0); }
+            20% { clip: rect(56px, 800px, 103px, 0); }
+            40% { clip: rect(22px, 800px, 64px, 0); }
+            60% { clip: rect(88px, 800px, 120px, 0); }
+            80% { clip: rect(13px, 800px, 32px, 0); }
+            100% { clip: rect(42px, 800px, 99px, 0); }
+        }
+        
+        .ascii-art {
+            color: var(--terminal-purple);
+            line-height: 1.3;
+            margin: 15px 0;
+            white-space: pre;
+            font-size: 0.6rem;
+            letter-spacing: 1px;
+        }
+        
+        .highlight {
+            color: var(--terminal-cyan);
+        }
+        
+        .skill-bar {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .skill-name {
+            display: inline-block;
+            width: 150px;
+            color: var(--terminal-green);
+        }
+        
+        .skill-level {
+            display: inline-block;
+            height: 15px;
+            background: linear-gradient(to right, var(--terminal-green), var(--terminal-cyan));
+            box-shadow: 0 0 5px var(--terminal-glow);
+            animation: expand 1s ease-out;
+            transform-origin: left;
+            border-radius: 3px;
+        }
+        
+        @keyframes expand {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
+        
+        .contact-item {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .contact-item a {
+            color: var(--terminal-purple);
+            text-decoration: none;
+            transition: all 0.3s;
+            margin-left: 10px;
+        }
+        
+        .contact-item a:hover {
+            color: var(--terminal-cyan);
+            text-shadow: 0 0 10px var(--terminal-cyan);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .command-response {
+            margin: 10px 0;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .project-card {
+            background: rgba(0, 30, 30, 0.3);
+            border-left: 3px solid var(--terminal-green);
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 0 5px 5px 0;
+            animation: slideIn 0.4s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .project-title {
+            color: var(--terminal-yellow);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .project-desc {
+            color: var(--text-color);
+            font-size: 0.9rem;
+        }
+        
+        .project-tech {
+            margin-top: 5px;
+            font-size: 0.8rem;
+            color: var(--terminal-purple);
+        }
+        
+        .tech-tag {
+            display: inline-block;
+            background: rgba(177, 156, 217, 0.2);
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-right: 5px;
+            margin-top: 5px;
+        }
+        
+        .social-icons {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .social-icon {
+            color: var(--terminal-purple);
+            font-size: 1.5rem;
+            transition: all 0.3s;
+        }
+        
+        .social-icon:hover {
+            color: var(--terminal-cyan);
+            transform: translateY(-3px);
+            text-shadow: 0 0 10px var(--terminal-cyan);
+        }
+        
+        /* Matrix rain effect */
+        canvas {
+            display: block;
+        }
+        
+        .typewriter {
+            overflow: hidden;
+            border-right: 2px solid var(--terminal-green);
+            white-space: nowrap;
+            animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+        }
+        
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+        
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: var(--terminal-green) }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrix" class="matrix-background"></canvas>
+    
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="terminal-buttons">
+                <div class="terminal-button red"></div>
+                <div class="terminal-button yellow"></div>
+                <div class="terminal-button green"></div>
+            </div>
+            <div class="glitch" data-text="user@cyberterminal:~">user@Trongdepzai-dev-terminal:~</div>
+            <div class="terminal-buttons">
+                <div style="width: 20px;"></div>
+            </div>
+        </div>
+        <div class="terminal-body" id="terminal-body">
+            <div id="typing-text" class="typing-text"></div>
+            <div id="command-line" class="command-line hidden">
+                <span class="prompt">></span>
+                <input type="text" class="command-input" id="command-input" autocomplete="off" spellcheck="false">
+                <span class="cursor"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Matrix effect
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
+        const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const nums = '0123456789';
+        const symbols = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~';
+        const binary = '01';
+        
+        const alphabet = katakana + latin + nums + symbols + binary;
+        
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+        
+        const rainDrops = [];
+        
+        for (let x = 0; x < columns; x++) {
+            rainDrops[x] = 1;
+        }
+        
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#0f0';
+            ctx.font = fontSize + 'px monospace';
+            
+            for (let i = 0; i < rainDrops.length; i++) {
+                const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+                
+                if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    rainDrops[i] = 0;
+                }
+                rainDrops[i]++;
+            }
+            
+            requestAnimationFrame(draw);
+        }
+        
+        // Terminal typing effect
+        const terminalText = document.getElementById('typing-text');
+        const commandLine = document.getElementById('command-line');
+        const commandInput = document.getElementById('command-input');
+        
+        const messages = [
+            { text: "Initializing system...", delay: 30, style: "color: #0f0" },
+            { text: "Loading profile data...", delay: 30, style: "color: #0f0" },
+            { text: "██████████████ 100%", delay: 10, style: "color: #0ff" },
+            { text: "\n", delay: 100 },
+            { text: "> Welcome to TRONGDEPZAI-DEV TERMINAL // ACCESS GRANTED", delay: 5, style: "color: #0f0; font-weight: bold" },
+            { text: "\n\n", delay: 80 },
+            { text: ">> SYSTEM USER PROFILE <<", delay: 5, style: "color: #b19cd9; text-decoration: underline" },
+            { text: "\n", delay: 80 },
+            { text: "> NAME: ", delay: 15 },
+            { text: "B.Trọng", delay: 50, style: "color: #0ff; font-weight: bold" },
+            { text: "", delay: 50, style: "color: #0f0; font-weight: bold" },
+            { text: "\n", delay: 30 },
+            { text: "> TITLE: ", delay: 15 },
+            { text: "FRONTEND-DEVELOPER", delay: 30, style: "color: #0ff" },
+            { text: "\n", delay: 30 },
+            { text: "> LOCATION: ", delay: 15 },
+            { text: "[DATA ENCRYPTED]", delay: 40, style: "color: #f44" },
+            { text: "\n", delay: 30 },
+            { text: "> STATUS: ", delay: 15 },
+            { text: "OPERATIONAL STATUS: ACTIVATED // SECURITY LEVEL: DELTA - VERIFIED", delay: 30, style: "color: #0f0" },
+            { text: "\n\n", delay: 80 },
+            { text: ">> SKILL MATRIX <<", delay: 5, style: "color: #b19cd9; text-decoration: underline" },
+            { text: "\n", delay: 80 },
+            { text: "> PYTHON: ", delay: 15 },
+            { text: "████▍  30%", delay: 10, style: "color: #0ff" },
+            { text: "\n", delay: 25 },
+            { text: "> JAVASCRIPT: ", delay: 12 },
+            { text: "██████████████████▊ 95%", delay: 20, style: "color: #0ff" },
+            { text: "\n", delay: 30 },
+            { text: "> CSS: ", delay: 10 },
+            { text: "█████████████████▌ 93%", delay: 18, style: "color: #0ff" },
+            { text: "\n", delay: 30 },
+            { text: "> HTML: ", delay: 12 },
+            { text: "██████████████████▍ 97%", delay: 18, style: "color: #0ff" },
+            { text: "\n", delay: 25 },
+            { text: "> CYBERSECURITY: ", delay: 15 },
+            { text: "██████  50%", delay: 15, style: "color: #0ff" },
+            { text: "\n", delay: 30 },
+            { text: "> CLOUD ARCHITECTURE: ", delay: 18 },
+            { text: "████████▍ 66%", delay: 18, style: "color: #0ff" },
+            { text: "\n", delay: 30 },
+            { text: "> AI/ML: ", delay: 8 },
+            { text: "███████▌ 55%", delay: 15, style: "color: #0ff" },
+            { text: "\n", delay: 25 },
+            { text: "> BLOCKCHAIN: ", delay: 10 },
+            { text: "█ 5%", delay: 12, style: "color: #0ff" },
+            { text: "\n\n", delay: 80 },
+            { text: ">> PROJECT HISTORY <<", delay: 5, style: "color: #b19cd9; text-decoration: underline" },
+            { text: "\n", delay: 80 },
+            { text: "> [2024] REDTEAM TOOLS VIETNAMESE - LEAD PROJECT", delay: 20 },
+            { text: "\n", delay: 80 },
+            { text: "> [2024] BLUETEAM TOOLS VIETNAMESE - CONTINUE FORM REDTEAM PROJECT", delay: 20 },
+            { text: "\n", delay: 100 },
+            { text: "> [2025] HACKQUIZ 2020", delay: 20 },
+            { text: "\n", delay: 30 },
+            { text: "> [2025] IP TRACKING", delay: 20 },
+            { text: "\n\n", delay: 50 },
+            { text: ">> CONTACT POINTS <<", delay: 5, style: "color: #b19cd9; text-decoration: underline" },
+            { text: "\n", delay: 80 },
+            { text: "> EMAIL: ", delay: 15 },
+            { text: "trongha664@gmail.com", delay: 20, style: "color: #0ff" },
+            { text: "\n", delay: 30 },
+            { text: "> FACEBOOK: ", delay: 15 },
+            { text: "profile.php?id=100086916187949&locale=vi_VN", delay: 20, style: "color: #0ff" },
+            { text: "\n", delay: 30 },
+            { text: "> GITHUB: ", delay: 15 },
+            { text: "github.com/Trongdepzai-dev", delay: 20, style: "color: #0ff" },
+            { text: "\n\n", delay: 30 },
+            { text: "> Type 'help' for available commands", delay: 20, style: "color: #0f0" },
+            { text: "\n", delay: 30 },
+        ];
+        
+        let currentMessageIndex = 0;
+        let currentCharIndex = 0;
+        let isTyping = true;
+        
+        function typeNextCharacter() {
+            if (currentMessageIndex >= messages.length) {
+                isTyping = false;
+                commandLine.classList.remove('hidden');
+                commandInput.focus();
+                return;
+            }
+            
+            const currentMessage = messages[currentMessageIndex];
+            const textToType = currentMessage.text;
+            
+            if (currentCharIndex < textToType.length) {
+                const char = textToType.charAt(currentCharIndex);
+                const span = document.createElement('span');
+                span.textContent = char;
+                
+                if (currentMessage.style) {
+                    span.style = currentMessage.style;
+                }
+                
+                terminalText.appendChild(span);
+                currentCharIndex++;
+                
+                setTimeout(typeNextCharacter, currentMessage.delay);
+            } else {
+                currentMessageIndex++;
+                currentCharIndex = 0;
+                setTimeout(typeNextCharacter, 80);
+            }
+        }
+        
+        function processCommand(command) {
+            terminalText.appendChild(document.createElement('br'));
+            
+            const prompt = document.createElement('span');
+            prompt.textContent = '> ';
+            prompt.style.color = '#0f0';
+            terminalText.appendChild(prompt);
+            
+            const cmdText = document.createElement('span');
+            cmdText.textContent = command;
+            cmdText.style.color = '#e0e0e0';
+            terminalText.appendChild(cmdText);
+            
+            terminalText.appendChild(document.createElement('br'));
+            
+            const response = document.createElement('div');
+            response.className = 'command-response';
+            
+            command = command.toLowerCase().trim();
+            
+            if (command === 'help' || command === '?') {
+                response.innerHTML = `
+                <div class="typewriter" style="width: fit-content;">Available commands:</div><br>
+                - <span class="highlight">about</span>: Show detailed profile<br>
+                - <span class="highlight">skills</span>: List technical skills<br>
+                - <span class="highlight">projects</span>: Show project details<br>
+                - <span class="highlight">contact</span>: Show contact information<br>
+                - <span class="highlight">social</span>: Show social media links<br>
+                - <span class="highlight">experience</span>: Show work experience<br>
+                - <span class="highlight">education</span>: Show education background<br>
+                - <span class="highlight">clear</span>: Clear the terminal<br>
+                - <span class="highlight">exit</span>: Close terminal (just kidding)<br><br>
+                <span style="color: #0f0">Tip: Try commands with --help for more info (e.g. 'projects --help')</span>`;
+            } 
+            else if (command === 'about') {
+                response.innerHTML = `
+                <div class="typewriter" style="width: fit-content;">// SYSTEM USER PROFILE //</div><br><br>
+                <span class="highlight">TRONGDEPZAI-DEV</span> is a passionate developer with expertise in:<br>
+                - Frontend development (React, Vue, Angular)<br>
+                - UI/UX design principles<br>
+                - Web performance optimization<br>
+                - Responsive and accessible web design<br><br>
+                With experience in building modern web applications, I focus on creating clean, efficient, and user-friendly interfaces.`;
+            } 
+            else if (command === 'skills') {
+                response.innerHTML = `
+                <div class="typewriter" style="width: fit-content;">>> TECHNICAL SKILLS <<</div><br><br>
+                <div class="skill-bar"><span class="skill-name">JavaScript/TypeScript:</span> <span class="skill-level" style="width: 95%"></span></div>
+                <div class="skill-bar"><span class="skill-name">HTML/CSS:</span> <span class="skill-level" style="width: 97%"></span></div>
+                <div class="skill-bar"><span class="skill-name">React/Vue:</span> <span class="skill-level" style="width: 90%"></span></div>
+                <div class="skill-bar"><span class="skill-name">Node.js:</span> <span class="skill-level" style="width: 85%"></span></div>
+                <div class="skill-bar"><span class="skill-name">UI/UX Design:</span> <span class="skill-level" style="width: 80%"></span></div>
+                <div class="skill-bar"><span class="skill-name">Python:</span> <span class="skill-level" style="width: 30%"></span></div>
+                <div class="skill-bar"><span class="skill-name">Blockchain:</span> <span class="skill-level" style="width: 5%"></span></div>`;
+            }
+            else if (command === 'projects' || command === 'projects --help') {
+                if (command.includes('--help')) {
+                    response.innerHTML = `
+                    <div class="typewriter" style="width: fit-content;">PROJECTS HELP</div><br><br>
+                    Usage: projects [option]<br><br>
+                    Options:<br>
+                    - <span class="highlight">--all</span>: Show all projects (default)<br>
+                    - <span class="highlight">--web</span>: Show only web projects<br>
+                    - <span class="highlight">--tools</span>: Show only tool projects<br>
+                    - <span class="highlight">--recent</span>: Show recent projects only<br><br>
+                    Example: 'projects --web'`;
+                } else {
+                    response.innerHTML = `
+                    <div class="typewriter" style="width: fit-content;">>> PROJECT PORTFOLIO <<</div><br><br>
+                    <div class="project-card">
+                        <div class="project-title">REDTEAM TOOLS VIETNAMESE</div>
+                        <div class="project-desc">A comprehensive collection of cybersecurity tools with Vietnamese documentation and localization.</div>
+                        <div class="project-tech">
+                            <span class="tech-tag">JavaScript</span>
+                            <span class="tech-tag">React</span>
+                            <span class="tech-tag">Node.js</span>
+                            <span class="tech-tag">Cybersecurity</span>
+                        </div>
+                    </div>
+                    
+                    <div class="project-card">
+                        <div class="project-title">BLUETEAM TOOLS VIETNAMESE</div>
+                        <div class="project-desc">Continuation of the REDTEAM project focusing on defensive security tools with Vietnamese support.</div>
+                        <div class="project-tech">
+                            <span class="tech-tag">Vue.js</span>
+                            <span class="tech-tag">Firebase</span>
+                            <span class="tech-tag">Security</span>
+                        </div>
+                    </div>
+                    
+                    <div class="project-card">
+                        <div class="project-title">HACKQUIZ 2020</div>
+                        <div class="project-desc">Interactive cybersecurity quiz application with real-time scoring and leaderboard.</div>
+                        <div class="project-tech">
+                            <span class="tech-tag">React</span>
+                            <span class="tech-tag">WebSockets</span>
+                            <span class="tech-tag">MongoDB</span>
+                        </div>
+                    </div>
+                    
+                    <div class="project-card">
+                        <div class="project-title">IP TRACKING</div>
+                        <div class="project-desc">Network utility tool for IP address analysis and geolocation tracking.</div>
+                        <div class="project-tech">
+                            <span class="tech-tag">JavaScript</span>
+                            <span class="tech-tag">API Integration</span>
+                            <span class="tech-tag">Geolocation</span>
+                        </div>
+                    </div>`;
+                }
+            }
+            else if (command === 'contact') {
+                response.innerHTML = `
+                <div class="typewriter" style="width: fit-content;">>> CONTACT INFORMATION <<</div><br><br>
+                <div class="contact-item"><i class="fas fa-envelope"></i> Email: <a href="mailto:trongha664@gmail.com">trongha664@gmail.com</a></div>
+                <div class="contact-item"><i class="fas fa-phone"></i> Phone: <span style="color: #f44">[Available upon request]</span></div>
+                <div class="contact-item"><i class="fas fa-map-marker-alt"></i> Location: <span style="color: #f44">[DATA ENCRYPTED]</span></div><br>
+                <span style="color: #0f0">For business inquiries, please include detailed project information.</span>`;
+            }
+            else if (command === 'social') {
+                response.innerHTML = `
+                <div class="typewriter" style="width: fit-content;">>> SOCIAL MEDIA LINKS <<</div><br><br>
+                <div class="social-icons">
+                    <a href="https://github.com/Trongdepzai-dev" target="_blank" class="social-icon"><i class="fab fa-github"></i></a>
+                    <a href="#" target="_blank" class="social-icon"><i class="fab fa-facebook"></i></a>
+                    <a href="#" target="_blank" class="social-icon"><i class="fab fa-linkedin"></i></a>
+                    <a href="#" target="_blank" class="social-icon"><i class="fab fa-twitter"></i></a>
+                    <a href="#" target="_blank" class="social-icon"><i class="fab fa-instagram"></i></a>
+                </div><br>
+                <span style="color: #0f0">Connect with me for collaborations and discussions!</span>`;
+            }
+            else if (command === 'experience') {
+                response.innerHTML = `
+                <div class="typewriter" style="width: fit-content;">>> WORK EXPERIENCE <<</div><br><br>
+                <div class="project-card">
+                    <div class="project-title">FRONTEND DEVELOPER | CYBERSEC FIRM (2023-Present)</div>
+                    <div class="project-desc">
+                        - Developed and maintained cybersecurity tools interfaces<br>
+                        - Optimized web application performance by 40%<br>
+                        - Implemented responsive designs for multiple devices
+                    </div>
+                </div>
+                
+                <div class="project-card">
+                    <div class="project-title">WEB DEVELOPER INTERN | TECH COMPANY (2022)</div>
+                    <div class="project-desc">
+                        - Assisted in building company website and internal tools<br>
+                        - Participated in code reviews and team meetings<br>
+                        - Fixed UI bugs and improved user experience
+                    </div>
+                </div>`;
+            }
+            else if (command === 'education') {
+                response.innerHTML = `
+                <div class="typewriter" style="width: fit-content;">>> EDUCATION BACKGROUND <<</div><br><br>
+                <div class="project-card">
+                    <div class="project-title">COMPUTER SCIENCE DEGREE | UNIVERSITY (2019-2023)</div>
+                    <div class="project-desc">
+                        - Focus on Software Engineering and Web Technologies<br>
+                        - Graduated with Honors<br>
+                        - Relevant coursework: Algorithms, Web Development, Databases
+                    </div>
+                </div>
+                
+                <div class="project-card">
+                    <div class="project-title">ONLINE COURSES & CERTIFICATIONS</div>
+                    <div class="project-desc">
+                        - Advanced JavaScript Concepts (2023)<br>
+                        - React Masterclass (2022)<br>
+                        - Web Accessibility (2022)<br>
+                        - UI/UX Design Fundamentals (2021)
+                    </div>
+                </div>`;
+            }
+            else if (command === 'clear' || command === 'cls') {
+                terminalText.innerHTML = '';
+                commandInput.value = '';
+                return;
+            }
+            else if (command === 'exit' || command === 'quit') {
+                response.innerHTML = `
+                <div class="typewriter" style="width: fit-content; color: #f44">TERMINAL LOCKED</div><br><br>
+                <span style="color: #f44">This terminal session cannot be terminated remotely.</span><br>
+                <span style="color: #0f0">Type 'clear' to reset the terminal instead.</span>`;
+            }
+            else if (command === '') {
+                // Do nothing for empty command
+                return;
+            }
+            else {
+                response.innerHTML = `
+                <span style="color: #f44">Command not found: ${command}</span><br>
+                Type <span class="highlight">'help'</span> for available commands.`;
+            }
+            
+            terminalText.appendChild(response);
+            terminalText.appendChild(document.createElement('br'));
+            commandLine.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Command history functionality
+        let commandHistory = [];
+        let historyIndex = -1;
+        
+        commandInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const command = this.value;
+                this.value = '';
+                
+                if (command.trim() !== '') {
+                    commandHistory.push(command);
+                    historyIndex = commandHistory.length;
+                    processCommand(command);
+                }
+            }
+            else if (e.key === 'ArrowUp') {
+                if (commandHistory.length > 0) {
+                    if (historyIndex > 0) historyIndex--;
+                    if (historyIndex >= 0) {
+                        this.value = commandHistory[historyIndex];
+                        // Move cursor to end
+                        setTimeout(() => {
+                            this.selectionStart = this.selectionEnd = this.value.length;
+                        }, 0);
+                    }
+                }
+                e.preventDefault();
+            }
+            else if (e.key === 'ArrowDown') {
+                if (commandHistory.length > 0) {
+                    if (historyIndex < commandHistory.length - 1) historyIndex++;
+                    this.value = historyIndex >= 0 && historyIndex < commandHistory.length ? 
+                                commandHistory[historyIndex] : '';
+                    // Move cursor to end
+                    setTimeout(() => {
+                        this.selectionStart = this.selectionEnd = this.value.length;
+                    }, 0);
+                }
+                e.preventDefault();
+            }
+        });
+        
+        // Start animations
+        window.addEventListener('load', function() {
+            draw();
+            typeNextCharacter();
+        });
+        
+        window.addEventListener('resize', function() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        
+        // Easter egg commands
+        const easterEggs = {
+            'sudo rm -rf /': "Nice try! But I won't let you destroy this terminal 😉",
+            'make me a sandwich': "What? Make it yourself!",
+            'the answer to life the universe and everything': "42",
+            'hello': "Hello there! 👋",
+            'hi': "Hi! How can I help you today?",
+            'whoami': "You are the user of this terminal. I am your helpful guide!",
+            'date': new Date().toLocaleString(),
+            'ls': "bin  dev  etc  home  lib  proc  tmp  usr  var",
+            'pwd': "/home/user/Trongdepzai-dev-terminal",
+            'neofetch': `<pre>
+            ...................Trongdepzai-dev@terminal...................
+            ...................OS: Terminal OS v3.1.4.....................
+            ...................Host: Cyber Terminal v2.0..................
+            ...................Kernel: 5.15.0-76-generic.................
+            ...................Uptime: 2 hours, 15 minutes...............
+            ...................Packages: 384 (term), 12 (gui).............
+            ...................Shell: zsh 5.8.............................
+            ...................Resolution: 1920x1080......................
+            ...................Terminal: web-terminal.....................
+            ...................CPU: Virtual CPU @ 3.20GHz................
+            ...................Memory: 1024MB/8192MB (12%)...............
+            </pre>`
+        };
+        
+        // Check for easter eggs before processing normal commands
+        const originalProcessCommand = processCommand;
+        
+        processCommand = function(command) {
+            const lowerCommand = command.toLowerCase();
+            
+            // Check for exact matches
+            if (easterEggs.hasOwnProperty(lowerCommand)) {
+                const response = document.createElement('div');
+                response.className = 'command-response';
+                response.innerHTML = easterEggs[lowerCommand];
+                terminalText.appendChild(document.createElement('br'));
+                
+                const prompt = document.createElement('span');
+                prompt.textContent = '> ';
+                prompt.style.color = '#0f0';
+                terminalText.appendChild(prompt);
+                
+                const cmdText = document.createElement('span');
+                cmdText.textContent = command;
+                cmdText.style.color = '#e0e0e0';
+                terminalText.appendChild(cmdText);
+                
+                terminalText.appendChild(document.createElement('br'));
+                terminalText.appendChild(response);
+                terminalText.appendChild(document.createElement('br'));
+                commandLine.scrollIntoView({ behavior: 'smooth' });
+                return;
+            }
+            
+            // Check for partial matches
+            for (const [key, value] of Object.entries(easterEggs)) {
+                if (lowerCommand.includes(key)) {
+                    const response = document.createElement('div');
+                    response.className = 'command-response';
+                    response.innerHTML = value;
+                    terminalText.appendChild(document.createElement('br'));
+                    
+                    const prompt = document.createElement('span');
+                    prompt.textContent = '> ';
+                    prompt.style.color = '#0f0';
+                    terminalText.appendChild(prompt);
+                    
+                    const cmdText = document.createElement('span');
+                    cmdText.textContent = command;
+                    cmdText.style.color = '#e0e0e0';
+                    terminalText.appendChild(cmdText);
+                    
+                    terminalText.appendChild(document.createElement('br'));
+                    terminalText.appendChild(response);
+                    terminalText.appendChild(document.createElement('br'));
+                    commandLine.scrollIntoView({ behavior: 'smooth' });
+                    return;
+                }
+            }
+            
+            // If no easter egg found, process normally
+            originalProcessCommand(command);
+        };
+    </script>
+</body>
+</html>
